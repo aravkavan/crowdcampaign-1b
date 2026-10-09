@@ -1,0 +1,29 @@
+# Dependencies (npm install recreates them)
+node_modules/
+
+# Build output
+dist/
+
+# Personal secrets: never commit these
+.env.local
+.env.*.local
+.secrets/
+# The tracker's API keys (model, search) live here
+tracker/.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# NOTE: backend/.env and frontend/.env ARE committed on purpose (course requirement).
+# They hold only the throwaway database URL and non-secret settings.
+# tracker/.env is NOT committed: it holds personal API keys (see tracker/.env.example).
+
+# System and editor clutter
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

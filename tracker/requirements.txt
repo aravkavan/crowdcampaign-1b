@@ -1,0 +1,3 @@
+# Install with: pip install -r tracker/requirements.txt
+requests>=2.31,<3      # HTTP for the model, search and app APIs (also brings the certifi CA bundle)
+PyYAML>=6.0,<7         # reads config.yaml

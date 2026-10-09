@@ -1,0 +1,97 @@
+# CrowdCampaign market-intel tracker: the agent's whole policy lives in this file.
+# The code enforces every limit below; nothing the model reads or writes can change them.
+
+# What the tracker is for, and how many developments to keep per campaign (3 <= k <= 10).
+topic: Market intel for CrowdCampaign briefs, so pitches build on what's new instead of repeating it
+k: 5
+
+# The campaigns to research (at most 5). Each is matched to the app by its exact title,
+# and each has its own research topic. Results appear on that campaign's page in the app.
+campaigns:
+  - title: Get NYC students talking about zero-sugar lemonade
+    topic: zero-sugar and better-for-you soda and lemonade brands, their product launches and marketing aimed at Gen Z and college students
+  - title: Name and launch our oat-milk cold brew
+    topic: oat-milk and plant-based coffee drinks, cold brew launches, and coffee chain marketing campaigns
+  - title: Make our refillable bottle the one everyone carries
+    topic: reusable water bottle brands, viral bottle trends, product launches and marketing campaigns
+
+# The model that makes the decisions. "auto" uses the first provider below whose API key
+# is set in tracker/.env. Any OpenAI-compatible endpoint works: add base_url and key_env.
+model:
+  provider: auto
+  providers:
+    gemini:
+      name: gemini-3.5-flash-lite
+      reasoning_effort: low
+    groq:
+      name: openai/gpt-oss-120b
+      reasoning_effort: low
+      max_output_tokens: 1024   # Groq's free tier allows 8,000 tokens per minute, so keep replies short
+  max_output_tokens: 4096       # longest reply allowed (thinking included)
+  request_timeout_seconds: 60
+
+# Web search (Tavily). One basic search costs 1 credit.
+search:
+  provider: tavily
+  topic: news           # news results come with publish dates
+  time_range: month     # only results from the past month
+  max_results: 6
+  search_depth: basic
+
+# Extra guidance for the model, added to its fixed instructions.
+instructions: |
+  A development is a specific, recent event: a product launch, a marketing campaign or stunt,
+  a partnership, a pricing change, or a notable sales or survey result. Opinion pieces and
+  generic listicles are not developments.
+  Rank by how useful each development is to someone pitching or judging marketing ideas for
+  this campaign: how new it is, how big it is, and how close it is to the campaign's audience.
+  Prefer developments from the past 30 days. Use at most one development per article unless
+  the article clearly reports several separate events.
+
+# The tools the model may call. Anything else it asks for is refused.
+tools:
+  - search_web
+  - fetch_article
+  - finish
+
+# Budgets, enforced by the runtime for each campaign. When one runs out, the agent stops
+# and writes a report marked partial from the evidence it already has.
+limits:
+  max_steps: 10        # model calls
+  max_searches: 3      # search_web calls
+  max_fetches: 5       # fetch_article calls that reach the network (skipped URLs are free)
+  max_tokens: 60000    # prompt + reply tokens across all model calls
+  max_seconds: 420     # wall-clock time, including waits for rate limits
+
+# Retries for transient failures (timeouts, per-minute rate limits, server errors).
+# Terminal failures (bad key, daily quota, payment required) are never retried.
+retries:
+  max_retries: 3
+  base_delay_seconds: 2      # waits 2 s, 4 s, 8 s (plus a little randomness)
+  max_wait_seconds: 65       # a provider asking us to wait longer than this ends the run
+
+# fetch_article's guardrail. These checks run before any request is made.
+fetch:
+  allowed_schemes: [http, https]   # the code also refuses anything that isn't http(s)
+  allowed_ports: [80, 443]
+  allowed_hosts: ["*"]             # "*" = any public host not blocked below
+  blocked_hosts:                   # sites behind a login or whose terms forbid scraping
+    - facebook.com
+    - instagram.com
+    - x.com
+    - twitter.com
+    - tiktok.com
+    - linkedin.com
+    - reddit.com
+    - pinterest.com
+    - youtube.com
+    - threads.net
+    - wsj.com
+    - ft.com
+    - bloomberg.com
+  respect_robots_txt: true
+  timeout_seconds: 15              # for the whole download, redirects included
+  max_bytes: 2000000               # reading stops at 2 MB
+  max_redirects: 4
+  max_chars_to_model: 3500         # article text shown to the model, per article
+  user_agent: "Mozilla/5.0 (compatible; CrowdCampaignTracker/1.0; NYU course project)"
