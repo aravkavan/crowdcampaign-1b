@@ -50,7 +50,7 @@ You need **two terminals**.
 **Terminal 1: backend**
 
 ```bash
-git clone https://github.com/YOUR-CLASS-ORG/YOUR-REPO.git crowdcampaign
+git clone https://github.com/aravkavan/crowdcampaign-1b.git crowdcampaign
 cd crowdcampaign/backend
 npm install
 npm run seed
